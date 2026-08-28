@@ -1,0 +1,62 @@
+name: Deploy to GitHub Pages
+
+# app/ 을 정적 빌드해 Pages로 올린다.
+# 벡터스토어(app/public/ismsp-docs.json)는 저장소에 커밋돼 있으므로
+# 배포 파이프라인에서 임베딩을 다시 만들지 않는다.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: 의존성 설치
+        working-directory: app
+        run: npm ci
+
+      - name: 벡터스토어가 있는지 확인
+        run: |
+          test -f app/public/ismsp-docs.json || {
+            echo "app/public/ismsp-docs.json 이 없습니다. 로컬에서 'npm run embed' 후 커밋하세요."
+            exit 1
+          }
+
+      - name: 빌드
+        working-directory: app
+        run: npm run build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: app/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

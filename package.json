@@ -1,0 +1,13 @@
+{
+  "name": "ismsp-chatbot",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "ISMS-P 인증기준 안내 챗봇 — 고시 원문에 근거해 답하고 근거와 판정을 공개하는 브라우저 RAG 챗봇",
+  "scripts": {
+    "embed": "node scripts/embed-docs.mjs"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^3.7.6"
+  }
+}

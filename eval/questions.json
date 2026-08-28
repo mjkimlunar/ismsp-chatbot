@@ -1,0 +1,81 @@
+{
+  "note": "고정 질문 세트. 실험 도중 문구·순서를 바꾸지 않는다. 바꾸면 행 간 비교의 기준이 함께 달라진다.",
+  "source_version": "정보보호 및 개인정보보호 관리체계 인증 등에 관한 고시 (2024. 7. 24. 시행)",
+  "questions": [
+    {
+      "qid": "Q1",
+      "type": "정상",
+      "text": "1.1.1이 뭐야?",
+      "expect_chunks": ["IC-1.1.1"],
+      "expect": { "cited": true, "refusal": false },
+      "왜": "항목번호를 그대로 묻는 질문. BM25가 정확한 표기를 잡아야 한다."
+    },
+    {
+      "qid": "Q2",
+      "type": "정상",
+      "text": "위험 평가는 얼마나 자주 해야 하나요?",
+      "expect_chunks": ["IC-1.2.3"],
+      "expect": { "cited": true, "refusal": false },
+      "왜": "번호를 모르고 내용으로 묻는 질문. 벡터 검색이 의미로 찾아야 한다. 정답은 원문의 '연 1회 이상'."
+    },
+    {
+      "qid": "Q3",
+      "type": "정상",
+      "text": "ISMS-P 인증서 유효기간은 몇 년인가요?",
+      "expect_chunks": ["AR-32"],
+      "expect": { "cited": true, "refusal": false },
+      "왜": "인증기준이 아니라 조문에서 답이 나와야 한다. 두 자료원이 섞여 있어도 옳은 쪽을 고르는지 본다."
+    },
+    {
+      "qid": "Q4",
+      "type": "경계",
+      "text": "접근통제 관련 인증기준은 어떤 것들이 있나요?",
+      "expect_chunks": ["IC-2.6.1", "IC-2.6.2", "IC-2.6.3", "IC-2.6.4", "IC-2.6.5", "IC-2.6.6", "IC-2.6.7"],
+      "expect": { "cited": true, "refusal": false, "multi": true },
+      "왜": "여러 청크를 이어야 하는 질문. 근거가 둘 이상 인용되는지 확인한다."
+    },
+    {
+      "qid": "Q5",
+      "type": "경계",
+      "text": "인증을 받은 뒤에 매년 해야 하는 일이 있나요?",
+      "expect_chunks": ["AR-27", "AR-28"],
+      "expect": { "cited": true, "refusal": false, "multi": true },
+      "왜": "사후심사(연 1회)와 갱신심사(만료 3개월 전)가 서로 다른 조문에 있다. 하나만 답하면 불완전하다."
+    },
+    {
+      "qid": "Q6",
+      "type": "경계",
+      "text": "개인정보 파기에 관한 기준은 뭐가 있나요?",
+      "expect_chunks": ["IC-3.4.1", "IC-3.4.2"],
+      "expect": { "cited": true, "refusal": false, "multi": true },
+      "왜": "3영역 중분류 단위로 묶여야 하는 질문. 2영역의 유사 표현에 끌려가지 않는지 본다."
+    },
+    {
+      "qid": "Q7",
+      "type": "무근거",
+      "subtype": "자료 밖",
+      "text": "내일 날씨 어때?",
+      "expect_chunks": [],
+      "expect": { "cited": false, "refusal": true },
+      "왜": "코퍼스와 무관한 질문. 근거 없이 지어내지 않는지, 빈 출처를 꾸미지 않는지 확인한다."
+    },
+    {
+      "qid": "Q8",
+      "type": "무근거",
+      "subtype": "정책상 거부 — 판단 요구",
+      "text": "우리 회사 이 정도면 ISMS-P 심사 통과할까요?",
+      "expect_chunks": [],
+      "expect": { "cited": false, "refusal": true },
+      "왜": "근거는 검색되지만 비목표(통과 여부 판정)다. 근거가 있다는 이유로 답해 버리지 않는지 본다."
+    },
+    {
+      "qid": "Q9",
+      "type": "무근거",
+      "subtype": "정책상 거부 — 이행 방법",
+      "text": "1.1.1을 실제로 어떻게 이행하면 되나요? 문서 양식도 알려주세요.",
+      "expect_chunks": ["IC-1.1.1"],
+      "expect": { "cited": true, "refusal": true },
+      "왜": "인증기준 원문은 제시하되 이행 방법은 KISA 안내서로 넘겨야 한다. 코퍼스에 없는 해설을 지어내지 않는지 본다."
+    }
+  ]
+}
