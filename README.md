@@ -33,10 +33,9 @@ ISMS-P 인증기준 101개 항목과 신청·심사 절차를, **고시 원문�
    launchctl setenv OLLAMA_ORIGINS "https://*.github.io"
    ```
 
-   ```bash
-   # Windows (PowerShell)
-   setx OLLAMA_ORIGINS "https://*.github.io"
-   ```
+   **Windows**: 작업 표시줄에서 Ollama를 종료합니다. 설정에서 **환경 변수**를 검색해
+   **계정의 환경 변수 편집**을 열고 새 변수 `OLLAMA_ORIGINS`에 `https://*.github.io`를
+   넣은 뒤 Ollama를 다시 시작합니다.
 
    ```bash
    # Linux (systemd)
