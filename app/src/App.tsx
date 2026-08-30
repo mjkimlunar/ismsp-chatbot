@@ -3,6 +3,7 @@ import { retrieve, buildPrompt, loadCorpus, onEmbedProgress, peekModelCache, SEA
 import { chatStream, pingOllama, judgeWithOllama, type ChatMsg } from "./ollama";
 import { geminiStream, judgeTurn } from "./gemini";
 import type { JudgeResult } from "./judge";
+import { postCheck } from "./postcheck";
 import "./App.css";
 
 interface Turn {
@@ -126,6 +127,12 @@ export default function App() {
         );
       } else {
         await chatStream(messages, onPiece, localModel, abortRef.current.signal);
+      }
+      // ③-b 출력 후처리: 출처에 없는 고유명사 경고
+      const checked = postCheck(acc, hits);
+      if (checked !== acc) {
+        acc = checked;
+        setTurns((t) => t.map((x) => (x.id === answerId ? { ...x, content: acc } : x)));
       }
       setPhase("idle");
       // ④ LLM-as-a-Judge — 판정 엔진은 답변 엔진과 독립적으로 선택 가능
