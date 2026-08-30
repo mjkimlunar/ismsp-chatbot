@@ -188,9 +188,9 @@ const STOPWORDS = new Set([
 //  실험은 여기 값 하나씩만 바꾸고 eval/rubric.md의 지표로 비교한다.
 export const SEARCH = {
   /** 벡터 유사도로 뽑는 개수 */
-  vectorTop: 5,
+  vectorTop: 3,
   /** BM25로 보강하는 개수 (벡터 결과와 중복 제외) */
-  bm25Top: 3,
+  bm25Top: 1,
   /** 이 값 아래면 약한 근거로 보고 프롬프트를 보수화한다 */
   weakThreshold: 0.55,
   /** 항목번호(1.1.1, 2.10.3)를 한 토큰으로 살릴지 */
@@ -289,28 +289,17 @@ export function buildPrompt(question: string, hits: Retrieved[]): string {
   const best = hits[0]?.score ?? 0;
   const context = hits
     .map((h, i) => {
-      const prefix = i === 0 ? "★ 가장 관련도 높음 → " : "";
-      return `${prefix}[${h.chunk.id} | ${h.chunk.section}] ${h.chunk.text}`;
+      const marker = i === 0 ? "★" : `${i + 1}`;
+      return `[${marker}] [${h.chunk.id}] ${h.chunk.text}`;
     })
     .join("\n\n");
-  const weakNote = best < SEARCH.weakThreshold
-    ? "주의: 유사도가 낮습니다. 근거에 있는 내용만 짧게 답하세요."
-    : "";
   return [
-    "아래 [자료]는 ISMS-P 고시(2024.7.24. 시행) 원문 조각입니다. IC-=인증기준, AR-=고시 조문.",
-    "★ 핵심 규칙:",
-    "1. 자료 조각을 꼼꼼히 읽고, 질문의 답이 조각에 있으면 반드시 그 내용을 인용하여 답하세요.",
-    "2. 숫자·기간·기한·횟수·조건은 원문 그대로 인용하세요 (예: '3개월 전', '연 1회 이상').",
-    "3. [ID]를 답에 표시하세요. ★ 표시된 조각을 우선 확인하세요.",
-    "4. 자료 조각 어디에도 없는 내용만 '제가 가진 자료에는 없습니다'라고 답합니다.",
-    "5. 이행 방법·판단(대상 여부, 통과 가능성)은 하지 않습니다. 이행 방법은 KISA 안내서를 안내하세요.",
-    weakNote,
-    `현재: ${now} KST`,
+    `다음은 ISMS-P 고시 원문 조각입니다. [★]이 가장 관련도가 높습니다.`,
     "",
-    "[자료]",
     context,
     "",
-    "[질문]",
-    question,
-  ].filter(Boolean).join("\n");
+    `질문: ${question}`,
+    "",
+    "위 자료 조각에서 답을 찾아 한국어로 답하세요. [ID]를 표시하고, 숫자·기간·조건은 원문 그대로 인용하세요. 자료에 없는 내용은 추측하지 말고 '자료에 없습니다'라고만 답하세요.",
+  ].join("\n");
 }
