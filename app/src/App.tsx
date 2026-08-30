@@ -14,7 +14,7 @@ interface Turn {
   sources?: Retrieved[];
   question?: string;
   judge?: JudgeResult;
-  judgeBy?: "qwen3.5:2b" | "gemini-3.5-flash-lite";
+  judgeBy?: "qwen2.5:3b" | "gemini-3.5-flash-lite";
   judgeError?: boolean;
   feedback?: "up" | "down";
 }
@@ -121,7 +121,7 @@ export default function App() {
           abortRef.current.signal,
         );
       } else {
-        await chatStream(messages, onPiece, "qwen3.5:2b", abortRef.current.signal);
+        await chatStream(messages, onPiece, "qwen2.5:3b", abortRef.current.signal);
       }
       setPhase("idle");
       // ④ LLM-as-a-Judge — 답변에 쓴 엔진과 같은 모델이 판정한다
@@ -130,7 +130,7 @@ export default function App() {
       setJudgeBusy(true);
       try {
         const src = hits.map((h) => `[${h.chunk.id}] ${h.chunk.text}`).join("\n");
-        const by = engine === "gemini" && apiKey ? "gemini-3.5-flash-lite" as const : "qwen3.5:2b" as const;
+        const by = engine === "gemini" && apiKey ? "gemini-3.5-flash-lite" as const : "qwen2.5:3b" as const;
         const verdict =
           engine === "gemini" && apiKey
             ? await judgeTurn(lastQ, src, acc, apiKey)
@@ -218,7 +218,7 @@ export default function App() {
       <section className="engine">
         <div className="engine-row">
           <span>답변 엔진:</span>
-          <label><input type="radio" checked={engine==="local"} onChange={()=>pickEngine("local")} /> 로컬 ollama (qwen3.5:2b)</label>
+          <label><input type="radio" checked={engine==="local"} onChange={()=>pickEngine("local")} /> 로컬 ollama (qwen2.5:3b)</label>
           <label><input type="radio" checked={engine==="gemini"} onChange={()=>pickEngine("gemini")} /> Gemini API</label>
         </div>
         {engine === "gemini" && (
@@ -238,7 +238,7 @@ export default function App() {
           <strong>로컬 모델(ollama)에 연결할 수 없습니다.</strong>
           <ol>
             <li>브라우저 확인 — Safari는 이 페이지(https)에서 로컬 ollama 호출을 차단하므로 Chrome·Edge를 사용하세요. Chrome에서 "로컬 네트워크" 접근 권한을 물으면 <strong>허용</strong>을 누릅니다.</li>
-            <li><code>ollama serve</code> 실행 (또는 Ollama 앱 실행) · 모델 확인: <code>ollama pull qwen3.5:2b</code></li>
+            <li><code>ollama serve</code> 실행 (또는 Ollama 앱 실행) · 모델 확인: <code>ollama pull qwen2.5:3b</code></li>
             <li>
               github.io에서 열었다면 CORS 허용 — 운영 체제별로 한 번만 설정하고 Ollama를 재시작합니다:
               <div className="os-guide">
@@ -272,7 +272,7 @@ export default function App() {
         <div className="card card-c">
           <h2>사용 조건</h2>
           <p>
-            답변은 <strong>여러분 컴퓨터의 ollama(qwen3.5:2b)</strong>가 만듭니다. 서버가 대신
+            답변은 <strong>여러분 컴퓨터의 ollama(qwen2.5:3b)</strong>가 만듭니다. 서버가 대신
             실행하지 않으므로 ollama가 실행 중이어야 합니다. 첫 방문에는 임베딩 모델
             약 200MB를 내려받습니다. Chrome·Edge 권장.
           </p>
@@ -304,7 +304,7 @@ export default function App() {
                       {(t.judge.rubrics ?? []).map((r) => ` ${r.name} ${r.score}`).join(" ·")}
                       {t.judge.refusal ? " · 정당한 거부" : ""}
                       {t.judge.comment && <em> “{t.judge.comment}”</em>}
-                      <span className="judge-by"> · 판정 {t.judgeBy === "gemini-3.5-flash-lite" ? "gemini-3.5-flash-lite" : "qwen3.5:2b 자기평가"}</span>
+                      <span className="judge-by"> · 판정 {t.judgeBy === "gemini-3.5-flash-lite" ? "gemini-3.5-flash-lite" : "qwen2.5:3b 자기평가"}</span>
                     </span>
                   ) : t.judgeError ? (
                     <span className="judge fail">판정 실패 — 평가 모델이 결과를 만들지 못했습니다 (답변은 정상)</span>
@@ -425,7 +425,7 @@ export default function App() {
       <footer className="footer">
         <p>
           ISMS-P 인증기준 안내 챗봇 — 로컬 실행 데모. 자료: 국가법령정보센터 고시 원문(2024. 7. 24. 시행).
-          모델: qwen3.5:2b (ollama) · 임베딩: embeddinggemma-300m (브라우저).
+          모델: qwen2.5:3b (ollama) · 임베딩: embeddinggemma-300m (브라우저).
         </p>
       </footer>
     </div>

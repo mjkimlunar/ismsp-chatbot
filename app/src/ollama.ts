@@ -14,7 +14,7 @@ export type onToken = (text: string) => void;
 export async function chatStream(
   messages: ChatMsg[],
   onToken: onToken,
-  model = "qwen3.5:2b",
+  model = "qwen2.5:3b",
   signal?: AbortSignal,
 ): Promise<string> {
   const res = await fetch("http://localhost:11434/api/chat", {
@@ -60,7 +60,7 @@ export async function judgeWithOllama(
   question: string,
   sources: string,
   answer: string,
-  model = "qwen3.5:2b",
+  model = "qwen2.5:3b",
 ): Promise<JudgeResult> {
   const call = async (prompt: string): Promise<string> => {
     const res = await fetch("http://localhost:11434/api/chat", {
