@@ -33,7 +33,7 @@ export async function chatStream(
   // 비한국어 CJK 감지: 한자(4E00-9FFF) · 히라가나(3040-309F) · 가타카나(30A0-30FF)
   const CJK_CHAR = /[一-鿿぀-ゟ゠-ヿ]/g;
   let cjkStreak = 0; // 비한국어 CJK 문자 누적 카운터
-  const CJK_LIMIT = 8; // 8자 누적되면 이탈로 판단
+  const CJK_LIMIT = 3; // 3자 누적되면 이탈로 판단
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
