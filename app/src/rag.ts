@@ -281,12 +281,6 @@ export async function retrieve(question: string, k = SEARCH.vectorTop + SEARCH.b
 
 /** RAG 시스템 지시 — 근거 원칙을 고정 */
 export function buildPrompt(question: string, hits: Retrieved[]): string {
-  const now = new Intl.DateTimeFormat("ko-KR", {
-    timeZone: "Asia/Seoul",
-    year: "numeric", month: "long", day: "numeric", weekday: "long",
-    hour: "2-digit", minute: "2-digit", hour12: true,
-  }).format(new Date());
-  const best = hits[0]?.score ?? 0;
   const context = hits
     .map((h, i) => {
       const marker = i === 0 ? "★" : `${i + 1}`;
