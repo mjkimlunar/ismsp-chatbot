@@ -1,7 +1,20 @@
 import type { Retrieved } from "./rag";
 
-// 기관·법률 등 고유명사 패턴 (한국어 조직명에 흔한 접미사)
-const ORG_SUFFIX = /[가-힣]{2,}(?:위원회|보호원|진흥원|연구원|부|처|청|국|원|센터|공단|재단|협회|학회)/g;
+// 기관명 패턴: 짧은 접미사(부,처,청,국,원)는 오탐이 많으므로
+// 긴 접미사(위원회, 센터 등)와 3글자 이상 조합만 검사
+const ORG_PATTERNS = [
+  /[가-힣]{2,}위원회/g,
+  /[가-힣]{2,}보호원/g,
+  /[가-힣]{2,}진흥원/g,
+  /[가-힣]{2,}연구원/g,
+  /[가-힣]{2,}센터/g,
+  /[가-힣]{2,}공단/g,
+  /[가-힣]{2,}재단/g,
+  /[가-힣]{2,}협회/g,
+  /[가-힣]{3,}부(?=[^터\가-힣]|$)/g,  // "~으로부터" 오탐 방지
+  /[가-힣]{3,}처(?=[^리\가-힣]|$)/g,  // "~절차" 오탐 방지
+  /[가-힣]{3,}청(?=[^구\가-힣]|$)/g,  // "~신청" 오탐 방지
+];
 const LAW_PATTERN = /「[^」]+」/g;
 
 /** 답변에서 출처 자료에 없는 고유명사를 찾아 경고를 덧붙인다 */
@@ -10,13 +23,14 @@ export function postCheck(answer: string, hits: Retrieved[]): string {
 
   const unverified: string[] = [];
 
-  // 기관명 검사
-  for (const m of answer.matchAll(ORG_SUFFIX)) {
-    const name = m[0];
-    if (!srcText.includes(name)) unverified.push(name);
+  for (const pat of ORG_PATTERNS) {
+    pat.lastIndex = 0;
+    for (const m of answer.matchAll(pat)) {
+      const name = m[0];
+      if (!srcText.includes(name)) unverified.push(name);
+    }
   }
 
-  // 법률명 검사 (「」로 감싼 이름)
   for (const m of answer.matchAll(LAW_PATTERN)) {
     const name = m[0];
     if (!srcText.includes(name)) unverified.push(name);
