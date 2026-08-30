@@ -30,8 +30,10 @@ export async function chatStream(
   const decoder = new TextDecoder();
   let full = "";
   let buf = "";
-  // CJK 통합 한자(U+4E00–9FFF) · 가타카나(U+30A0–30FF)가 연속 30자 이상이면 언어 이탈로 판단
-  const CJK_RUNAWAY = /[一-鿿゠-ヿ]{30,}/;
+  // 비한국어 CJK 감지: 한자(4E00-9FFF) · 히라가나(3040-309F) · 가타카나(30A0-30FF)
+  const CJK_CHAR = /[一-鿿぀-ゟ゠-ヿ]/g;
+  let cjkStreak = 0; // 비한국어 CJK 문자 누적 카운터
+  const CJK_LIMIT = 8; // 8자 누적되면 이탈로 판단
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -47,9 +49,11 @@ export async function chatStream(
         if (piece) {
           full += piece;
           onToken(piece);
-          if (CJK_RUNAWAY.test(full.slice(-200))) {
+          const hits = piece.match(CJK_CHAR);
+          if (hits) cjkStreak += hits.length; else cjkStreak = 0;
+          if (cjkStreak >= CJK_LIMIT) {
             reader.cancel();
-            full = full.replace(CJK_RUNAWAY, "").trimEnd();
+            full = full.replace(/[一-鿿぀-ゟ゠-ヿ]+/g, "").trimEnd();
             full += "\n\n(모델이 다른 언어로 전환되어 답변을 중단했습니다)";
             onToken("\n\n(모델이 다른 언어로 전환되어 답변을 중단했습니다)");
             return full;
