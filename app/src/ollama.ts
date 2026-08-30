@@ -20,7 +20,7 @@ export async function chatStream(
   const res = await fetch("http://localhost:11434/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model, messages, stream: true, think: false }),
+    body: JSON.stringify({ model, messages, stream: true, think: false, options: { num_predict: 512 } }),
     signal,
   });
   if (!res.ok) {
@@ -30,6 +30,8 @@ export async function chatStream(
   const decoder = new TextDecoder();
   let full = "";
   let buf = "";
+  // CJK 통합 한자(U+4E00–9FFF) · 가타카나(U+30A0–30FF)가 연속 30자 이상이면 언어 이탈로 판단
+  const CJK_RUNAWAY = /[一-鿿゠-ヿ]{30,}/;
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -45,6 +47,13 @@ export async function chatStream(
         if (piece) {
           full += piece;
           onToken(piece);
+          if (CJK_RUNAWAY.test(full.slice(-200))) {
+            reader.cancel();
+            full = full.replace(CJK_RUNAWAY, "").trimEnd();
+            full += "\n\n(모델이 다른 언어로 전환되어 답변을 중단했습니다)";
+            onToken("\n\n(모델이 다른 언어로 전환되어 답변을 중단했습니다)");
+            return full;
+          }
         }
       } catch {
         // 불완전한 줄은 다음 청크에서

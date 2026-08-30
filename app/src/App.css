@@ -219,6 +219,17 @@ body {
   font-family: var(--font-util);
 }
 .engine-row input[type="password"]::placeholder { color: var(--mute); }
+.model-input {
+  width: 140px;
+  padding: .4rem .7rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: .85rem;
+  font-family: var(--mono, monospace);
+}
+.model-input:focus { border-color: var(--indigo); outline: none; }
 
 /* ---------- Banner (ollama 안내) ---------- */
 .banner {

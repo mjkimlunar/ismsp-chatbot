@@ -14,7 +14,7 @@ interface Turn {
   sources?: Retrieved[];
   question?: string;
   judge?: JudgeResult;
-  judgeBy?: "qwen2.5:3b" | "gemini-3.5-flash-lite";
+  judgeBy?: string;
   judgeError?: boolean;
   feedback?: "up" | "down";
 }
@@ -48,6 +48,10 @@ export default function App() {
   const [engine, setEngine] = useState<"local" | "gemini">(
     () => (localStorage.getItem("engine") === "gemini" ? "gemini" : "local"),
   );
+  const [judgeEngine, setJudgeEngine] = useState<"local" | "gemini">(
+    () => (localStorage.getItem("judgeEngine") === "local" ? "local" : "gemini"),
+  );
+  const [localModel, setLocalModel] = useState(() => localStorage.getItem("localModel") || "qwen2.5:3b");
   const [apiKey, setApiKey] = useState(() => localStorage.getItem("gemini_key") ?? "");
   const [showSource, setShowSource] = useState<Retrieved[] | null>(null);
   const [lastHits, setLastHits] = useState<Retrieved[] | null>(null);
@@ -121,20 +125,20 @@ export default function App() {
           abortRef.current.signal,
         );
       } else {
-        await chatStream(messages, onPiece, "qwen2.5:3b", abortRef.current.signal);
+        await chatStream(messages, onPiece, localModel, abortRef.current.signal);
       }
       setPhase("idle");
-      // ④ LLM-as-a-Judge — 답변에 쓴 엔진과 같은 모델이 판정한다
-      //    로컬 → qwen 자기평가(API 키 불필요, 독립 평가 아님)
-      //    gemini → 답변은 gemini-3.5-flash, 판정은 gemini-3.5-flash-lite (다른 모델이 채점)
+      // ④ LLM-as-a-Judge — 판정 엔진은 답변 엔진과 독립적으로 선택 가능
+      //    gemini → gemini-3.5-flash-lite (독립 평가, API 키 필요)
+      //    로컬 → qwen2.5:3b 자기평가 (API 키 불필요, 독립 평가 아님)
       setJudgeBusy(true);
       try {
         const src = hits.map((h) => `[${h.chunk.id}] ${h.chunk.text}`).join("\n");
-        const by = engine === "gemini" && apiKey ? "gemini-3.5-flash-lite" as const : "qwen2.5:3b" as const;
-        const verdict =
-          engine === "gemini" && apiKey
+        const useGeminiJudge = judgeEngine === "gemini" && apiKey;
+        const by = useGeminiJudge ? "gemini-3.5-flash-lite" as const : localModel as typeof localModel;
+        const verdict = useGeminiJudge
             ? await judgeTurn(lastQ, src, acc, apiKey)
-            : await judgeWithOllama(lastQ, src, acc);
+            : await judgeWithOllama(lastQ, src, acc, localModel);
         setTurns((t) => t.map((x) => (x.id === answerId ? { ...x, judge: verdict, judgeBy: by } : x)));
       } catch {
         // 판정 실패가 답변을 해치지 않게 배지만 단다
@@ -185,6 +189,11 @@ export default function App() {
     localStorage.setItem("engine", v);
   }
 
+  function pickJudge(v: "local" | "gemini") {
+    setJudgeEngine(v);
+    localStorage.setItem("judgeEngine", v);
+  }
+
   function setFeedback(id: number, v: "up" | "down") {
     setTurns((t) => t.map((x) => (x.id === id ? { ...x, feedback: x.feedback === v ? undefined : v } : x)));
     // 피드백은 로컬에만 기록 (제출 없음 — 데모)
@@ -218,10 +227,23 @@ export default function App() {
       <section className="engine">
         <div className="engine-row">
           <span>답변 엔진:</span>
-          <label><input type="radio" checked={engine==="local"} onChange={()=>pickEngine("local")} /> 로컬 ollama (qwen2.5:3b)</label>
+          <label><input type="radio" checked={engine==="local"} onChange={()=>pickEngine("local")} /> 로컬 ollama</label>
+          {engine === "local" && (
+            <input
+              className="model-input"
+              value={localModel}
+              onChange={(e) => { setLocalModel(e.target.value); localStorage.setItem("localModel", e.target.value); }}
+              placeholder="모델명 (예: qwen2.5:3b)"
+            />
+          )}
           <label><input type="radio" checked={engine==="gemini"} onChange={()=>pickEngine("gemini")} /> Gemini API</label>
         </div>
-        {engine === "gemini" && (
+        <div className="engine-row">
+          <span>판정 엔진:</span>
+          <label><input type="radio" checked={judgeEngine==="gemini"} onChange={()=>pickJudge("gemini")} /> Gemini API (독립 평가)</label>
+          <label><input type="radio" checked={judgeEngine==="local"} onChange={()=>pickJudge("local")} /> 로컬 자기평가</label>
+        </div>
+        {(engine === "gemini" || judgeEngine === "gemini") && (
           <div className="engine-row">
             <input
               type="password"
@@ -272,9 +294,9 @@ export default function App() {
         <div className="card card-c">
           <h2>사용 조건</h2>
           <p>
-            답변은 <strong>여러분 컴퓨터의 ollama(qwen2.5:3b)</strong>가 만듭니다. 서버가 대신
-            실행하지 않으므로 ollama가 실행 중이어야 합니다. 첫 방문에는 임베딩 모델
-            약 200MB를 내려받습니다. Chrome·Edge 권장.
+            답변 엔진을 <strong>Gemini API</strong>(키 필요, 빠름) 또는 <strong>로컬
+            ollama</strong>(설치 필요, 오프라인 가능) 중에서 선택할 수 있습니다.
+            첫 방문에는 임베딩 모델 약 200MB를 내려받습니다. Chrome·Edge 권장.
           </p>
         </div>
       </section>
@@ -304,7 +326,7 @@ export default function App() {
                       {(t.judge.rubrics ?? []).map((r) => ` ${r.name} ${r.score}`).join(" ·")}
                       {t.judge.refusal ? " · 정당한 거부" : ""}
                       {t.judge.comment && <em> “{t.judge.comment}”</em>}
-                      <span className="judge-by"> · 판정 {t.judgeBy === "gemini-3.5-flash-lite" ? "gemini-3.5-flash-lite" : "qwen2.5:3b 자기평가"}</span>
+                      <span className="judge-by"> · 판정 {t.judgeBy === "gemini-3.5-flash-lite" ? "gemini-3.5-flash-lite" : `${t.judgeBy} 자기평가`}</span>
                     </span>
                   ) : t.judgeError ? (
                     <span className="judge fail">판정 실패 — 평가 모델이 결과를 만들지 못했습니다 (답변은 정상)</span>
@@ -425,7 +447,7 @@ export default function App() {
       <footer className="footer">
         <p>
           ISMS-P 인증기준 안내 챗봇 — 로컬 실행 데모. 자료: 국가법령정보센터 고시 원문(2024. 7. 24. 시행).
-          모델: qwen2.5:3b (ollama) · 임베딩: embeddinggemma-300m (브라우저).
+          모델: ollama (사용자 선택) · 임베딩: embeddinggemma-300m (브라우저).
         </p>
       </footer>
     </div>
